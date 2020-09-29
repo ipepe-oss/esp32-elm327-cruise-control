@@ -5,12 +5,12 @@
 #include <SPI.h>
 #include "mcp_can.h"
 
-const int SPI_CS_PIN = 9;
-MCP_CAN CAN(SPI_CS_PIN);                                    // Set CS pin
-
 #define PID_ENGINE_RPM      0x0C
 #define PID_VEHICLE_SPEED   0x0D
 #define CAN_ID_PID          0x7DF
+
+const int SPI_CS_PIN = 9;
+MCP_CAN CAN(SPI_CS_PIN);                                    // Set CS pin
 
 const int LED_PIN = 13;
 
