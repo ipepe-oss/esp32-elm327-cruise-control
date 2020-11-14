@@ -2,7 +2,8 @@
 #include "BluetoothSerial.h"
 #include "ELMduino.h"
 
-// OBDII bluetooth mac 24:42:16:08:00:00
+// NONAME MAC 24:42:16:08:00:00
+// V-LINK MAC 00:1D:A5:15:E9:68
 BluetoothSerial SerialBT;
 ELM327 myELM327;
 
@@ -11,14 +12,11 @@ uint32_t obdRPM = 0;
 uint32_t obdSPEED = 0;
 uint32_t obdTHROTTLE = 0;
 
-//Thread
-TimedAction elmduinoAction = TimedAction(300, getOBDValues);
-
 void setupElmduino(){
   //SerialBT.setPin("1234");
-  SerialBT.begin("ArduHUD", true);
+  SerialBT.begin("ESP32-CC", true);
 
-  if (!SerialBT.connect("OBDII")){
+  if (!SerialBT.connect("V-LINK")){
     Serial.println("Couldn't connect to OBD scanner - Phase 1");
     while(1);
   }
@@ -29,25 +27,13 @@ void setupElmduino(){
   }
 
   Serial.println("Connected to ELM327");
-}
-void loopElmduino() {
-    elmduinoAction.check();
-}
-
-void getOBDValues() {
-  float tempRPM = myELM327.rpm();
-
-  if (myELM327.status == ELM_SUCCESS){
-    rpm = (uint32_t)tempRPM;
-    Serial.print("RPM: "); Serial.println(rpm);
-  }else{
-    printError();
-  }
+  delay(10000);
+  Serial.println(myELM327.sendCommand(READ_VOLTAGE));
+  Serial.println(myELM327.payload);
 }
 
 
-void printError()
-{
+void printError(){
   Serial.print("Received: ");
   for (byte i = 0; i < myELM327.recBytes; i++)
     Serial.write(myELM327.payload[i]);
@@ -67,6 +53,33 @@ void printError()
     Serial.println(F("\tERROR: ELM_STOPPED"));
   else if (myELM327.status == ELM_TIMEOUT)
     Serial.println(F("\tERROR: ELM_TIMEOUT"));
-  else if (myELM327.status == ELM_TIMEOUT)
+  else if (myELM327.status == ELM_GENERAL_ERROR)
     Serial.println(F("\tERROR: ELM_GENERAL_ERROR"));
+}
+
+void getOBDValues() {
+  float tempRPM = myELM327.rpm();
+
+  if (myELM327.status == ELM_SUCCESS){
+    obdRPM = (uint32_t)tempRPM;
+    Serial.print("RPM: "); Serial.println(obdRPM);
+  }else{
+    printError();
+  }
+
+
+//  Serial.println("OBD!");
+//  Serial.println(myELM327.rpm());
+//  Serial.println(myELM327.speed());
+//  Serial.println(myELM327.throttle());
+//  Serial.println(myELM327.queryPID(SERVICE_01, THROTTLE_POSITION));
+//  Serial.println(myELM327.payload);
+//  Serial.println(myELM327.sendCommand(READ_VOLTAGE));
+//  Serial.println(myELM327.payload);
+}
+
+
+TimedAction elmduinoAction = TimedAction(1000, getOBDValues);
+void loopElmduino() {
+    elmduinoAction.check();
 }
