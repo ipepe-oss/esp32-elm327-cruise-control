@@ -2,10 +2,16 @@
 #include "BluetoothSerial.h"
 #include "TimedAction.h"
 
+const uint8_t SECOND = 1000;
+
 BluetoothSerial SerialBT;
 ObdPid obd_speed("0D", 500);
 ObdPid obd_throttle("11", 300);
-//ObdPid obd_rpm("0C", 500);
+
+
+bool sendCommand(String command, String expected_output, uint8_t timeout){
+  return true;
+}
 
 void setupELM327(){
     SerialBT.begin("ESPCC", true); // bool BluetoothSerial::begin(String localName, bool isMaster)
@@ -15,15 +21,14 @@ void setupELM327(){
     }
     Serial.println("Connected to BTSerial");
 
-    while(!sendCommand("ATZ, ""ELM327 v2.1", 10*SECOND)){
-
+    while(!sendCommand(String("ATZ"), String("ELM327 v2.1"), 10*SECOND)){
+      // waiting to connect
     }
-    while(!sendCommand("AT SP0", "OK", 10*SECOND)){
-
+    while(!sendCommand(String("AT SP0"), String("OK"), 10*SECOND)){
+      // waiting to connect
     }
 }
 
-TimedAction btConnectionManager = TimedAction(5000, helloLoop);
 void loopELM327(){
       if (Serial.available()) {
         Serial.println("Sending command");
@@ -34,10 +39,8 @@ void loopELM327(){
         Serial.write(SerialBT.read());
       }
 }
+TimedAction btConnectionManager = TimedAction(100, loopELM327);
 
-void sendCommand(string command, string expected output, string timeout){
-
-}
 
 // "UNABLE TO CONNECT" - ELM STATUS FAILURE
 // "NO DATA" - ELM STATUS FAILURE
