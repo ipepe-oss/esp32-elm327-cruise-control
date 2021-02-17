@@ -3,13 +3,11 @@ Open Source Cruise Control module for cars that don't have CC and have cable dri
 
 # Components
 ## Hardware
-### Longan Labs - OBD-II CAN Bus GPS Development Kit
-This development kit allows you to access your vehicle’s CAN bus via the OBD-II connector. The development kit can be connected (plugged) to your vehicle’s OBD-II port (On-Board Diagnostics port). 
+### ESP32 Board
+I'm using typical ESP32 development board.
 
- * Store: https://www.longan-labs.cc/1030003.html
- * Docs: https://docs.longan-labs.cc/1030003/
-
-![OBD-II CAN Bus GPS Development Kit](docs/images/longan-obd/Longan-Labs-OBD-Dev-Kit.jpg)
+### ELM327
+I'm using V-LINK ELM327 connector
 
 ### Cytron - MDD3A
 The Cytron MDD3A motor controller can control 2 DC motors or 1 stepper motor. The continuous current per level is 3 A (5 A high). The supply voltage is from 4 V to 16 V. The controller works with a logical voltage of 1.8 V, 3.3 V, 5 V and 12 V (PWM and DIR), thanks to which it is possible to control using a microcontroller such as Arduino or Raspberry.
