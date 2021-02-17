@@ -24,7 +24,7 @@ void setupELM327(){
 }
 
 TimedAction btConnectionManager = TimedAction(5000, helloLoop);
-void loop(){
+void loopELM327(){
       if (Serial.available()) {
         Serial.println("Sending command");
         SerialBT.write(Serial.read());

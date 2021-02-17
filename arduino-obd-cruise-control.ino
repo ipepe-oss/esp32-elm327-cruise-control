@@ -5,6 +5,7 @@
 void setup(){
     Serial.begin(115200);
     delay(3000);
+    Serial.println("Initializing Arduino OBD Cruise Control V0.1")
     setupWifiManager();
     setupOTA();
     setupELM327Manager();
