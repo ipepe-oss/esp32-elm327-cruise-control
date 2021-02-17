@@ -6,10 +6,10 @@ AsyncWebServer server(80);
 DNSServer dns;
 AsyncWiFiManager wifiManager(&server,&dns);
 
-void setupWifiManager(){
-  wifiManager.autoConnect("AutoConnectAP", "Password");
+void setupWifi(){
+  wifiManager.autoConnect("ESPCC-AP", "Password");
 }
 
-void loopWifiManager(){
+void loopWifi(){
   wifiManager.loop();
 }

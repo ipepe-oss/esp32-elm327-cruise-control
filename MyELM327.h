@@ -5,9 +5,8 @@
 const uint8_t SECOND = 1000;
 
 BluetoothSerial SerialBT;
-ObdPid obd_speed("0D", 500);
-ObdPid obd_throttle("11", 300);
-
+ObdPid obd_speed(String("0D"), 500);
+ObdPid obd_throttle(String("11"), 300);
 
 bool sendCommand(String command, String expected_output, uint8_t timeout){
   return true;

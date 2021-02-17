@@ -7,7 +7,7 @@ class ObdPid {
     float value;
 
     ObdPid(String p_id, int p_millis_to_expire) {
-      id = String("11"); //TODO: id = p_id
+      id = p_id;
       millis_to_expire = p_millis_to_expire;
       value = -1;
       updated_at = millis();
