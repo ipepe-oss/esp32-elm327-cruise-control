@@ -2,6 +2,10 @@
 //#include "MyOTA.h"
 #include "MyELM327.h"
 
+void ensureSafety(){
+    cc_ensure_cytron_stop();
+}
+
 void setup(){
     Serial.begin(115200);
     delay(1000);
