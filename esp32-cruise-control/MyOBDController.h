@@ -8,9 +8,7 @@ BluetoothSerial SerialBT;
 ELM327 myELM327;
 bool debug = false;
 
-
 int obd_errors_count = 0;
-
 
 void checkObdThrottle(){
   float temp = myELM327.throttle();
@@ -54,7 +52,7 @@ void setupOBD(){
 }
 
 bool isEnabledOBD(){
-  return obd_errors_count == 0;
+  return obd_errors_count == 0 && current_speed > 30;
 }
 
 void loopOBD(bool isEnabledNow){

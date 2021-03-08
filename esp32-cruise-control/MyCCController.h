@@ -7,6 +7,10 @@ const int CYTRON_STEP_MILIS = 30;
 
 int target_speed = -1;
 
+void speedToThrottle(int p_speed){
+    return (p_speed + 3) / 6;
+}
+
 void speedUpCC(){
   //Serial.println("[CC] Speed UP");
   digitalWrite(CYTRON_M1A_SPEED_UP, HIGH);
@@ -33,7 +37,7 @@ void setThrottleTo(float target_throttle){
 
 void handleCruising(){
   digitalWrite(CYTRON_M2A_CLUTCH_ON, HIGH);
-  setThrottleTo(TARGET_THROTTLE);
+  setThrottleTo(speedToThrottle(target_speed));
 }
 
 TimedAction cruisingAction = TimedAction(500, handleCruising);
@@ -45,7 +49,11 @@ void emergencyStopCC(){
     digitalWrite(CYTRON_M2A_CLUTCH_ON, LOW);
     digitalWrite(CYTRON_M1A_SPEED_UP, LOW);
     digitalWrite(CYTRON_M1B_SPEED_DOWN, LOW);
-    target_speed = -1;    
+    target_speed = -1;
+    while(digitalRead(CYTRON_V5)){
+        Serial.println("[CC] EMERGENCY STOP! - Waiting for button depress");
+        delay(500);
+    }
 }
 
 void setupCC() {
@@ -60,6 +68,9 @@ void setupCC() {
 
 void loopCC(bool isEnabledNow) {
   if(isEnabledNow){
+    if(target_speed == -1){
+        target_speed = current_speed;
+    }
     cruisingAction.check();
   }else{
     emergencyStopCC();
@@ -67,5 +78,5 @@ void loopCC(bool isEnabledNow) {
 }
 
 bool isEnabledCC(){
-    return digitalRead(CYTRON_V5);
+    return digitalRead(CYTRON_V5) && ;
 }

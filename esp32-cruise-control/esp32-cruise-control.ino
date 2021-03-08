@@ -1,7 +1,5 @@
 #include "TimedAction.h"
 
-float TARGET_THROTTLE = 15.0;
-
 float current_throttle = -1;
 int32_t current_speed = -1;
 
