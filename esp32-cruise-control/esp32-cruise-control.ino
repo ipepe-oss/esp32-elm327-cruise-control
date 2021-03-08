@@ -1,26 +1,30 @@
-//#include "MyWifi.h"
-//#include "MyOTA.h"
-#include "MyELM327.h"
+#include "TimedAction.h"
+#include "MyCCController.h"
+#include "MyOBDController.h"
 
-void ensureSafety(){
-    cc_ensure_cytron_stop();
+void logCurrentStatus(){
+    Serial.println("[LOG] Speed: " + String(speed) + " Throttle: " + String(throttle));
+    Serial.println("[LOG] Target speed: " + String(target_speed));
 }
+
+TimedAction logAction = TimedAction(1000, logCurrentStatus);
 
 void setup(){
     Serial.begin(115200);
     delay(1000);
     Serial.println("");
     Serial.println("[MAIN] Initializing Arduino OBD Cruise Control V0.1");
-    //setupWifi();
-    //setupOTA();
-    setupELM327();
-    //setupCruiseController();
+    setupCC();
+    setupOBD();
     Serial.println("[MAIN] End of main setup");
 }
 
 void loop(){
-    //loopWifi();
-    //loopOTA();
-    loopELM327();
-    //loopCruiseController();
+    if(isEnabledCC()){
+        loopOBD();
+        loopCC();
+    }else{
+        emergencyStopCC();
+    }
+    logAction.check();
 }
