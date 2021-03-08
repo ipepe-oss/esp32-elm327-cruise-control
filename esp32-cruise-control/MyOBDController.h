@@ -8,15 +8,15 @@ BluetoothSerial SerialBT;
 ELM327 myELM327;
 bool debug = false;
 
-float throttle = -1;
-int32_t speed = -1;
+
 int obd_errors_count = 0;
 
 
 void checkObdThrottle(){
   float temp = myELM327.throttle();
   if (myELM327.status == ELM_SUCCESS){
-    throttle = (float)temp;
+    current_throttle = (float)temp;
+    obd_errors_count = 0;
   }else{
     obd_errors_count++;
     myELM327.printError();
@@ -26,16 +26,19 @@ void checkObdThrottle(){
 void checkObdSpeed(){
   int32_t temp = myELM327.kph();
   if (myELM327.status == ELM_SUCCESS){
-    speed = (int32_t)temp;
+    current_speed = (int32_t)temp;
+    obd_errors_count = 0;
   }else{
     obd_errors_count++;
     myELM327.printError();
   }
 }
 
-TimedAction obdSpeedAction = TimedAction(503, checkObdSpeed);
-TimedAction obdThrottleAction = TimedAction(251, checkObdThrottle);
+TimedAction fastObdSpeedAction = TimedAction(503, checkObdSpeed);
+TimedAction fastObdThrottleAction = TimedAction(251, checkObdThrottle);
 
+TimedAction slowObdSpeedAction = TimedAction(2000, checkObdSpeed);
+TimedAction slowObdThrottleAction = TimedAction(1000, checkObdThrottle);
 
 void setupOBD(){
   Serial.println("[OBD] Start setupOBD");
@@ -43,16 +46,24 @@ void setupOBD(){
   while (!SerialBT.connect(ADAPTER_ADDRESS)){
     Serial.println("[OBD] Couldn't connect to OBD scanner - Phase 1");
   }
+  Serial.println("[OBD] Connected to " + String(ADAPTER_ADDRESS));
   while (!myELM327.begin(SerialBT, debug, 5000)){
     Serial.println("[OBD] Couldn't connect to OBD scanner - Phase 2");
   }
-  Serial.println("[OBD] End setupOBD - Connected to ELM327");
+  Serial.println("[OBD] End setupOBD - Connected to ELM327 command line");
 }
 
-void loopOBD(){
-    obdSpeedAction.check();
-    obdThrottleAction.check();
-    if(obd_errors_count > 6){
-        emergencyStopCC();
-    }
+bool isEnabledOBD(){
+  return obd_errors_count == 0;
+}
+
+void loopOBD(bool isEnabledNow){
+  if(isEnabledNow){
+    fastObdSpeedAction.check();
+    fastObdThrottleAction.check();
+  }else{
+    slowObdSpeedAction.check();
+    slowObdThrottleAction.check();
+  }
+    
 }
