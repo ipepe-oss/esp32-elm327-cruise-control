@@ -14,3 +14,6 @@ https://gitlab.com/simoesusp/CarPuter/-/blob/master/SoftwareArduino/sistemaFinal
 https://gitlab.com/sair770/awesome-vehicle-security
 https://gitlab.com/mannsbart.jan/ShiftIndicator
 https://gitlab.com/triber-car/triber-car-duino
+
+## PID Controller
+https://github.com/Philmod/node-pid-controller

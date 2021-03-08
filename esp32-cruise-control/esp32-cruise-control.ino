@@ -17,7 +17,7 @@ void setup(){
     Serial.begin(115200);
     delay(1000);
     Serial.println("");
-    Serial.println("[MAIN] Initializing Arduino OBD Cruise Control V0.3");
+    Serial.println("[MAIN] Initializing Arduino OBD Cruise Control V0.4");
     setupCC();
     setupOBD();
     Serial.println("[MAIN] End of main setup");

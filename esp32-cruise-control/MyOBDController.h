@@ -52,7 +52,7 @@ void setupOBD(){
 }
 
 bool isEnabledOBD(){
-  return obd_errors_count == 0 && current_speed > 30;
+  return obd_errors_count == 0 && current_speed >= 40;
 }
 
 void loopOBD(bool isEnabledNow){
