@@ -1,8 +1,20 @@
 # arduino-cruise-control
 Open Source Cruise Control module for cars that don't have CC and have cable driven throttle body
 
-# Components
-## Hardware
+## Assembly
+![2021-03-03](docs/images/assembly/2021-03-08.jpg)
+
+I currently don't have wiring diagram but it is quite simple.
+
+Accessory 12V -> Step down -> 5V for ESP32
+Accessory 12V -> Cruise Button (on/off) -> Cytron Input
+Cytron 5V (goldpins) -> ESP32 (pin 16 - detecting button pressed)
+CYTRON_M2A_CLUTCH_ON (goldpins) -> ESP32 (pin 17)
+CYTRON_M1A_SPEED_UP (goldpins) -> ESP32 (pin 18)
+CYTRON_M1B_SPEED_DOWN (goldpins) -> ESP32 (pin 19)
+Common ground for all elements
+
+## Hardware Components
 ### ESP32 Board
 I'm using typical ESP32 development board.
 
