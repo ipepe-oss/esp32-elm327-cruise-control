@@ -4,38 +4,46 @@ const int CYTRON_M1A_SPEED_UP = 18;
 const int CYTRON_M1B_SPEED_DOWN = 19;
 
 const int CYTRON_STEP_MILIS = 25;
-const float THROTTLE_BACKLASH_PERCENT = 0.15;
+const float THROTTLE_BACKLASH_PERCENT = 0.10;
 
-int target_speed = -1;
+int target_speed = INVALID;
 
 float speedToThrottle(int p_speed){
+    // (x+3)/6 is formula for Honda K20A2 engine with RSX Throttle body
     return (((float)p_speed) + 3.0) / 6.0;
 }
 
 float throttleCompensation(){
-    return (target_speed - current_speed)*0.05;
+    return (target_speed - current_speed)*0.15;
 }
 
-void speedUpCC(int multiplier){
+float speedChangeMultiplier(float target_throttle){
+  //return 1;
+  return numMax(5, numMin(1, absDiff(current_throttle, target_throttle)/2));
+}
+
+void speedUpCC(float target_throttle){
   //Serial.println("[CC] Speed UP");
+  digitalWrite(CYTRON_M1B_SPEED_DOWN, LOW);
   digitalWrite(CYTRON_M1A_SPEED_UP, HIGH);
-  delay(CYTRON_STEP_MILIS * multiplier);
+  delay(CYTRON_STEP_MILIS * speedChangeMultiplier(target_throttle));
   digitalWrite(CYTRON_M1A_SPEED_UP, LOW);
 }
 
-void speedDownCC(int multiplier){
+void speedDownCC(float target_throttle){
   //Serial.println("[CC] Speed DOWN");
+  digitalWrite(CYTRON_M1A_SPEED_UP, LOW);
   digitalWrite(CYTRON_M1B_SPEED_DOWN, HIGH);
-  delay(CYTRON_STEP_MILIS * multiplier);
+  delay(CYTRON_STEP_MILIS * speedChangeMultiplier(target_throttle));
   digitalWrite(CYTRON_M1B_SPEED_DOWN, LOW);
 }
 
 void setThrottleTo(float target_throttle, float throttle_compensation){
-  //Serial.println("[CC] setThrottleTo " + String(target_throttle) + " " + String(current_throttle));
+  Serial.println("[CC] setThrottleTo tt:" + String(target_throttle) + ", tc:" + String(throttle_compensation) + ", ct: " + String(current_throttle));
   if( (current_throttle - THROTTLE_BACKLASH_PERCENT) > (target_throttle + throttle_compensation)){
-    speedDownCC((int)throttle_compensation);
+    speedDownCC(target_throttle);
   }else if ( (current_throttle + THROTTLE_BACKLASH_PERCENT) < (target_throttle + throttle_compensation)){
-    speedUpCC((int)throttle_compensation);
+    speedUpCC(target_throttle);
   }
 }
 
@@ -47,14 +55,14 @@ void handleCruising(){
 TimedAction cruisingAction = TimedAction(500, handleCruising);
 
 void emergencyStopCC(){
-    if(target_speed != -1 || digitalRead(CYTRON_M2A_CLUTCH_ON)){
+    if(target_speed != INVALID || digitalRead(CYTRON_M2A_CLUTCH_ON)){
       Serial.println("[CC] EMERGENCY STOP!");  
     }
     digitalWrite(CYTRON_M2A_CLUTCH_ON, LOW);
     digitalWrite(CYTRON_M1A_SPEED_UP, LOW);
     digitalWrite(CYTRON_M1B_SPEED_DOWN, LOW);
-    target_speed = -1;
-    while(digitalRead(CYTRON_V5)){
+    target_speed = INVALID;
+    if(digitalRead(CYTRON_V5)){
         Serial.println("[CC] EMERGENCY STOP! - Waiting for button depress");
         delay(500);
     }
@@ -72,8 +80,9 @@ void setupCC() {
 
 void loopCC(bool isEnabledNow) {
   if(isEnabledNow){
-    if(target_speed == -1){
+    if(target_speed == INVALID){
         target_speed = current_speed;
+        speedUpCC(20);
     }
     cruisingAction.check();
   }else{

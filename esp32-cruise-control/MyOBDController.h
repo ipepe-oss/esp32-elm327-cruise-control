@@ -17,6 +17,8 @@ void checkObdThrottle(){
     obd_errors_count = 0;
   }else{
     obd_errors_count++;
+    current_throttle = INVALID;
+    current_speed = INVALID;
     myELM327.printError();
   }
 }
@@ -28,6 +30,8 @@ void checkObdSpeed(){
     obd_errors_count = 0;
   }else{
     obd_errors_count++;
+    current_speed = INVALID;
+    current_throttle = INVALID;
     myELM327.printError();
   }
 }
@@ -45,14 +49,14 @@ void setupOBD(){
     Serial.println("[OBD] Couldn't connect to OBD scanner - Phase 1");
   }
   Serial.println("[OBD] Connected to " + String(ADAPTER_ADDRESS));
-  while (!myELM327.begin(SerialBT, debug, 5000)){
+  while (!myELM327.begin(SerialBT, debug, 10000)){
     Serial.println("[OBD] Couldn't connect to OBD scanner - Phase 2");
   }
   Serial.println("[OBD] End setupOBD - Connected to ELM327 command line");
 }
 
 bool isEnabledOBD(){
-  return obd_errors_count == 0 && current_speed >= 40;
+  return obd_errors_count < 5 && current_speed >= 40 && current_throttle > 0;
 }
 
 void loopOBD(bool isEnabledNow){
