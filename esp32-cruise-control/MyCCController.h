@@ -18,8 +18,11 @@ float throttleCompensation(){
 }
 
 float speedChangeMultiplier(float target_throttle){
-  //return 1;
-  return numMax(5, numMin(1, absDiff(current_throttle, target_throttle)/2));
+  if(absDiff(current_speed, target_speed) < 10){
+    return 1;   
+  }else{
+    return 5;
+  }
 }
 
 void speedUpCC(float target_throttle){
@@ -41,9 +44,9 @@ void speedDownCC(float target_throttle){
 void setThrottleTo(float target_throttle, float throttle_compensation){
   Serial.println("[CC] setThrottleTo tt:" + String(target_throttle) + ", tc:" + String(throttle_compensation) + ", ct: " + String(current_throttle));
   if( (current_throttle - THROTTLE_BACKLASH_PERCENT) > (target_throttle + throttle_compensation)){
-    speedDownCC(target_throttle);
+    speedDownCC(target_throttle + throttle_compensation);
   }else if ( (current_throttle + THROTTLE_BACKLASH_PERCENT) < (target_throttle + throttle_compensation)){
-    speedUpCC(target_throttle);
+    speedUpCC(target_throttle + throttle_compensation);
   }
 }
 
