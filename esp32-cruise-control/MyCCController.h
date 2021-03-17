@@ -19,7 +19,7 @@ float throttleCompensation(){
 
 float speedChangeMultiplier(float target_throttle){
   if(absDiff(current_speed, target_speed) < 10){
-    return 1;   
+    return 1;
   }else{
     return 5;
   }

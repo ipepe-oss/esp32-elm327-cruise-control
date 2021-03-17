@@ -1,8 +1,8 @@
 #include "BluetoothSerial.h"
 #include "ELMduino.h"
 
-//const char * const ADAPTER_ADDRESS = "OBDII";
-const char * const ADAPTER_ADDRESS = "V-LINK";
+//const char * const ADAPTER_ADDRESS = "24:42:16:08:00:00"; // "OBDII"
+const char * const ADAPTER_ADDRESS = "00:1D:A5:15:E9:68"; // "V-LINK"
 
 BluetoothSerial SerialBT;
 ELM327 myELM327;
