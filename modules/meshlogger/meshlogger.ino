@@ -4,7 +4,7 @@
 // TODO: sdcard save
 painlessMesh  mesh;
 
-void receivedCallback( uint32_t from, String &msg ) {
+void receivedCallback(uint32_t from, String &msg) {
   Serial.printf("startHere: Received from %u msg=%s\n", from, msg.c_str());
 }
 
@@ -23,7 +23,7 @@ void nodeTimeAdjustedCallback(int32_t offset) {
 void setup() {
   Serial.begin(115200);
 
-  mesh.setDebugMsgTypes( ERROR | MESH_STATUS | CONNECTION | SYNC | COMMUNICATION | GENERAL | MSG_TYPES | REMOTE );
+  mesh.setDebugMsgTypes(ERROR | MESH_STATUS | CONNECTION | SYNC | COMMUNICATION | GENERAL | MSG_TYPES | REMOTE);
   mesh.init(MESH_PREFIX, MESH_PASSWORD);
   mesh.setRoot(true);
   mesh.onReceive(&receivedCallback);
