@@ -14,11 +14,16 @@ const int CYTRON_M2A_CLUTCH_ON = 17;
 const int CYTRON_M1A_SPEED_UP = 18;
 const int CYTRON_M1B_SPEED_DOWN = 19;
 const int CYTRON_STEP_MILIS = 25;
-const float THROTTLE_BACKLASH_PERCENT = 0.10;
+const float THROTTLE_BACKLASH_PERCENT = 0.15;
 int target_speed = INVALID;
 TaskHandle_t Task1;
 TaskHandle_t Task2;
 painlessMesh  mesh;
+
+float Kp=1, Ki=0.1, Kd=0.1;
+float Pout, Iout, Dout;
+float actPWM, error, lastError, errorSum, Derror;
+
 
 bool isEnabledOBD(){
   return isConnectedOBD && ((millis() - lastOBDUpdateTime) < 5000);
@@ -31,22 +36,37 @@ void logCurrentStatus(){
 
 TimedAction logAction = TimedAction(1000, logCurrentStatus);
 
-
-float speedToThrottle(int p_speed){
-    // (x+3)/6 is formula for Honda K20A2 engine with RSX Throttle body
-    return (((float)p_speed) + 3.0) / 6.0;
-}
-
 float throttleCompensation(){
+    return 0.0;
     return (target_speed - current_speed)*0.15;
 }
 
 float speedChangeMultiplier(float target_throttle){
+  return 1;
   if(absDiff(current_speed, target_speed) < 10){
     return 1;
   }else{
     return 5;
   }
+}
+
+float pidCalcThrottle(){
+    error = target_speed - current_speed;
+    errorSum = errorSum + ((error+lastError)*0.5);
+    Derror = (error - lastError);
+    Pout = Kp * error;
+    Iout = Ki * errorSum;
+    Dout = Kd * Derror;
+    if(Iout>255){ Iout = 255;}
+    if(Iout<0){Iout = 0;}
+
+    actPWM = Pout + Iout + Dout;
+
+    if(actPWM > 255){ actPWM = 255;}
+    if(actPWM < 0){ actPWM = 0;}
+
+    lastError = error;
+    return 6.0+(actPWM / (5.0));
 }
 
 void speedUpCC(float target_throttle){
@@ -76,10 +96,10 @@ void setThrottleTo(float target_throttle, float throttle_compensation){
 
 void handleCruising(){
   digitalWrite(CYTRON_M2A_CLUTCH_ON, HIGH);
-  setThrottleTo(speedToThrottle(target_speed), throttleCompensation());
+  setThrottleTo(pidCalcThrottle(), throttleCompensation());
 }
 
-TimedAction cruisingAction = TimedAction(500, handleCruising);
+TimedAction cruisingAction = TimedAction(400, handleCruising);
 
 void emergencyStopCC(){
     if(target_speed != INVALID || digitalRead(CYTRON_M2A_CLUTCH_ON)){
@@ -108,14 +128,14 @@ void Task1code( void * pvParameters ){
 }
 
 void receivedCallback(uint32_t from, String &msg) {
-  Serial.printf("Received from %u msg=%s\n", from, msg.c_str());
+  //Serial.printf("[MESH] Received from %u msg=%s\n", from, msg.c_str());
   DynamicJsonDocument doc(1024);
   deserializeJson(doc, msg.c_str());
   String msg_from = doc["from"];
-  Serial.println("msg_from: " + msg_from);
+  //Serial.println("[MESH] msg_from: " + msg_from);
   if(msg_from == String("OBD")){
     lastOBDUpdateTime = millis();
-    Serial.println("From is equal to OBD");
+    //Serial.println("[MESH] From is equal to OBD");
     isConnectedOBD = doc["connected"];
     current_speed = doc["speed"];
     current_throttle = doc["throttle"];
@@ -127,7 +147,7 @@ void Task2code( void * pvParameters ){
   Serial.print("Task2 running on core ");
   Serial.println(xPortGetCoreID());
   for(;;){
-       if(isEnabledCC() && isEnabledOBD()){
+       if(isEnabledCC() && isEnabledOBD() && current_speed > 30){
          if(target_speed == INVALID){
              target_speed = current_speed;
              speedUpCC(20);

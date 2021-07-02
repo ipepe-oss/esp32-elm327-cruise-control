@@ -4,10 +4,8 @@ int settime = 1000;
 float Kp=0.7, Ki=1, Kd=0.2;
 float Pout, Iout, Dout;
 float actPWD; // syngal wyjsciowy regulatora
-float now, lasttime, timeChange; // czas dla pid
-unsigned int Input;
 float error, lastError;
-float Setpoint = 50; // target speed
+float target_speed = 50; // target speed
 float errorSum; // suma bledow dla czesci calkujacej
 float Derror; // error rozniczkująca
 
@@ -26,7 +24,7 @@ void ISR_count(){
 
 void ISR_timerone(){
 	Timer1.detachInterrupt();
-	Input = counter;
+	current_speed = counter;
 	counter = 0;
 	Timer1.attachInterrupt(ISR_Timerone)
 }
@@ -36,26 +34,20 @@ void setup{
 }
 
 void loop(){
+    error = target_speed - current_speed;
+    errorSum = errorSum + ((error+lastError)*0.5);
+    Derror = (error - lastError);
+    Pout = Kp * error;
+    Iout = Ki * errorSum;
+    Dout = Kd * Derror;
+    if(Iout>255){ Iout = 255;}
+    if(Iout<0){Iout = 0;}
 
-    now = millis();
-    timeChange = (now - lasttime);
-    if (timeChange >= settime){
-        error = Setpoint - Input;
-        errorSum = errorSum + ((error+lastError)*0.5);
-        Derror = (error - lastError);
-        Pout = Kp * error;
-        Iout = Ki * errorSum;
-        Dout = Kd * Derror;
-        if(Iout>255){ Iout = 255;}
-        if(Iout<0){Iout = 0;}
+    actPWM = Pout + Iout + Dout;
 
-        actPWM = Pout + Iout + Dout;
+    if(actPWM > 255){ actPWM = 255;}
+    if(actPWM < 0){ actPWM = 0;}
 
-        if(actPWM > 255){ actPWM = 255;}
-        if(actPWM < 0){ actPWM = 0;}
-
-        lastError = error;
-        lasttime = now;
-
-    }
+    lastError = error;
+    return actPWM / 255.0;
 }
