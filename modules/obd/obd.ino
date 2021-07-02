@@ -11,7 +11,6 @@
 // pin 17 = uart2 TX
 // pin 16 = uart2 RX
 
-
 painlessMesh  mesh;
 ELM327 myELM327;
 int obd_errors_count = 0;
@@ -20,7 +19,6 @@ float current_throttle = INVALID;
 int32_t current_speed = INVALID;
 TaskHandle_t Task1;
 TaskHandle_t Task2;
-
 
 String preprareJsonMessage () {
   DynamicJsonDocument json(1024);
@@ -39,7 +37,6 @@ void broadcastMessage(){
   Serial.println(msg);
   mesh.sendBroadcast(msg);
 }
-
 
 void checkObdThrottle(){
   Serial.println("Query: throttle");
@@ -99,7 +96,6 @@ void Task1code( void * pvParameters ){
   }
 }
 
-//Task2code: blinks an LED every 700 ms
 void Task2code( void * pvParameters ){
   Serial.print("Task2 running on core ");
   Serial.println(xPortGetCoreID());

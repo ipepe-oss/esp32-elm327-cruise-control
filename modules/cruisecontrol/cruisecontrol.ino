@@ -2,8 +2,12 @@
 #include "MyHelpers.h"
 
 const int INVALID = -1;
+bool isConnectedOBD = false;
 float current_throttle = INVALID;
 int32_t current_speed = INVALID;
+TaskHandle_t Task1;
+TaskHandle_t Task2;
+
 
 void logCurrentStatus(){
     Serial.println("[LOG] Speed: " + String(current_speed) + " Throttle: " + String(current_throttle) + " Target speed: " + String(target_speed));
@@ -83,45 +87,69 @@ void emergencyStopCC(){
     }
 }
 
-void setupCC() {
-  Serial.println("[CC] Setup start");
-  pinMode(CYTRON_V5, INPUT);
-  pinMode(CYTRON_M2A_CLUTCH_ON, OUTPUT);
-  pinMode(CYTRON_M1A_SPEED_UP, OUTPUT);
-  pinMode(CYTRON_M1B_SPEED_DOWN, OUTPUT);
-  emergencyStopCC();
-  Serial.println("[CC] Setup end");
-}
-
-void loopCC(bool isEnabledNow) {
-  if(isEnabledNow){
-    if(target_speed == INVALID){
-        target_speed = current_speed;
-        speedUpCC(20);
-    }
-    cruisingAction.check();
-  }else{
-    emergencyStopCC();
-  }
-}
-
 bool isEnabledCC(){
     return digitalRead(CYTRON_V5);
 }
 
+void Task1code( void * pvParameters ){
+  Serial.print("Task1 running on core ");
+  Serial.println(xPortGetCoreID());
+  for(;;){
+     mesh.update();
+  }
+}
+
+void receivedCallback(uint32_t from, String &msg) {
+  Serial.printf("Received from %u msg=%s\n", from, msg.c_str());
+  DynamicJsonDocument doc(1024);
+  deserializeJson(doc, msg.c_str());
+  String msg_from = doc["from"];
+  Serial.println("msg_from: " + msg_from);
+  if(msg_from == String("OBD")){
+    Serial.println("From is equal to OBD");
+    isConnectedOBD = doc["connected"]
+    obd_speed = doc["speed"];
+    obd_throttle = doc["throttle"];
+    updateLcd = true;
+  }
+}
+
+
+void Task2code( void * pvParameters ){
+  Serial.print("Task2 running on core ");
+  Serial.println(xPortGetCoreID());
+  for(;;){
+       if(isEnabledCC() && isConnectedOBD){
+         if(target_speed == INVALID){
+             target_speed = current_speed;
+             speedUpCC(20);
+         }
+         cruisingAction.check();
+       }else{
+         emergencyStopCC();
+       }
+  }
+}
+
 void setup(){
     Serial.begin(115200);
-    delay(1000);
+    delay(500);
     Serial.println("");
     Serial.println("[MAIN] Initializing Arduino OBD Cruise Control V0.6");
-    setupCC();
-    setupOBD();
+    mesh.init(MESH_PREFIX, MESH_PASSWORD);
+    mesh.onReceive(&receivedCallback);
+    Serial.println("[CC] Setup start");
+    pinMode(CYTRON_V5, INPUT);
+    pinMode(CYTRON_M2A_CLUTCH_ON, OUTPUT);
+    pinMode(CYTRON_M1A_SPEED_UP, OUTPUT);
+    pinMode(CYTRON_M1B_SPEED_DOWN, OUTPUT);
+    emergencyStopCC();
+    Serial.println("[CC] Setup end");
+    xTaskCreatePinnedToCore(Task1code, "Task1", 10000, NULL, 1, &Task1, 0);
+    xTaskCreatePinnedToCore(Task2code, "Task2", 10000, NULL, 1, &Task2, 1);
     Serial.println("[MAIN] End of main setup");
 }
 
 void loop(){
-    bool isEnabledNow = isEnabledCC() && isEnabledOBD();
-    loopOBD(isEnabledNow);
-    loopCC(isEnabledNow);
     logAction.check();
 }
