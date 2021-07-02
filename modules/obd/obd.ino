@@ -82,6 +82,7 @@ void loopOBD(){
     obd_errors_count = 0;
     current_throttle = INVALID;
     current_speed = INVALID;
+    broadcastMessage();
     myELM327.begin(Serial2, false, 10000);
   }
 }
@@ -93,6 +94,7 @@ void Task1code( void * pvParameters ){
   Serial.println(xPortGetCoreID());
   for(;;){
      mesh.update();
+     delay(1);
   }
 }
 
@@ -108,6 +110,7 @@ void setup() {
   Serial.begin(115200);
   Serial2.begin(38400);
   Serial.println("[OBD] Start setupOBD");
+  //    mesh.setDebugMsgTypes(ERROR | MESH_STATUS | CONNECTION | SYNC | COMMUNICATION | GENERAL | MSG_TYPES | REMOTE);
   mesh.init(MESH_PREFIX, MESH_PASSWORD);
   while (!myELM327.begin(Serial2, false, 10000)){
       Serial.println("[OBD] Couldn't connect to OBD scanner - Phase 2");
@@ -120,4 +123,5 @@ void setup() {
 }
 
 void loop() {
+  delay(10);
 }

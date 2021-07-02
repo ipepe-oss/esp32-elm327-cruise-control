@@ -103,6 +103,7 @@ void Task1code( void * pvParameters ){
   Serial.println(xPortGetCoreID());
   for(;;){
      mesh.update();
+     delay(1);
   }
 }
 
@@ -135,6 +136,7 @@ void Task2code( void * pvParameters ){
        }else{
          emergencyStopCC();
        }
+       delay(1);
   }
 }
 
@@ -142,7 +144,8 @@ void setup(){
     Serial.begin(115200);
     delay(500);
     Serial.println("");
-    Serial.println("[MAIN] Initializing Arduino OBD Cruise Control V0.6");
+    Serial.println("[MAIN] Initializing Arduino OBD Cruise Control V3.0");
+    //mesh.setDebugMsgTypes(ERROR | MESH_STATUS | CONNECTION | SYNC | COMMUNICATION | GENERAL | MSG_TYPES | REMOTE);
     mesh.init(MESH_PREFIX, MESH_PASSWORD);
     mesh.onReceive(&receivedCallback);
     Serial.println("[CC] Setup start");
@@ -152,11 +155,12 @@ void setup(){
     pinMode(CYTRON_M1B_SPEED_DOWN, OUTPUT);
     emergencyStopCC();
     Serial.println("[CC] Setup end");
-    xTaskCreatePinnedToCore(Task1code, "Task1", 10000, NULL, 1, &Task1, 0);
-    xTaskCreatePinnedToCore(Task2code, "Task2", 10000, NULL, 1, &Task2, 1);
+    xTaskCreatePinnedToCore(Task1code, "Task1", 10000, NULL, 1, &Task1, 1);
+    xTaskCreatePinnedToCore(Task2code, "Task2", 10000, NULL, 1, &Task2, 0);
     Serial.println("[MAIN] End of main setup");
 }
 
 void loop(){
     logAction.check();
+    delay(10);
 }
