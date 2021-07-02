@@ -11,7 +11,6 @@
 // pin 17 = uart2 TX
 // pin 16 = uart2 RX
 
-painlessMesh  mesh;
 ELM327 myELM327;
 int obd_errors_count = 0;
 const int INVALID = -1;
@@ -19,6 +18,7 @@ float current_throttle = INVALID;
 int32_t current_speed = INVALID;
 TaskHandle_t Task1;
 TaskHandle_t Task2;
+painlessMesh  mesh;
 
 String preprareJsonMessage () {
   DynamicJsonDocument json(1024);

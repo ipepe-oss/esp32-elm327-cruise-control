@@ -1,13 +1,28 @@
 #include "TimedAction.h"
 #include "MyHelpers.h"
+#include "painlessMesh.h"
+#include "meshsecrets.h"
+#include "ArduinoJSON.h"
 
 const int INVALID = -1;
+unsigned long lastOBDUpdateTime;
 bool isConnectedOBD = false;
 float current_throttle = INVALID;
 int32_t current_speed = INVALID;
+const int CYTRON_V5 = 16;
+const int CYTRON_M2A_CLUTCH_ON = 17;
+const int CYTRON_M1A_SPEED_UP = 18;
+const int CYTRON_M1B_SPEED_DOWN = 19;
+const int CYTRON_STEP_MILIS = 25;
+const float THROTTLE_BACKLASH_PERCENT = 0.10;
+int target_speed = INVALID;
 TaskHandle_t Task1;
 TaskHandle_t Task2;
+painlessMesh  mesh;
 
+bool isEnabledOBD(){
+  return isConnectedOBD && ((millis() - lastOBDUpdateTime) < 5000);
+}
 
 void logCurrentStatus(){
     Serial.println("[LOG] Speed: " + String(current_speed) + " Throttle: " + String(current_throttle) + " Target speed: " + String(target_speed));
@@ -15,15 +30,7 @@ void logCurrentStatus(){
 }
 
 TimedAction logAction = TimedAction(1000, logCurrentStatus);
-const int CYTRON_V5 = 16;
-const int CYTRON_M2A_CLUTCH_ON = 17;
-const int CYTRON_M1A_SPEED_UP = 18;
-const int CYTRON_M1B_SPEED_DOWN = 19;
 
-const int CYTRON_STEP_MILIS = 25;
-const float THROTTLE_BACKLASH_PERCENT = 0.10;
-
-int target_speed = INVALID;
 
 float speedToThrottle(int p_speed){
     // (x+3)/6 is formula for Honda K20A2 engine with RSX Throttle body
@@ -106,11 +113,11 @@ void receivedCallback(uint32_t from, String &msg) {
   String msg_from = doc["from"];
   Serial.println("msg_from: " + msg_from);
   if(msg_from == String("OBD")){
+    lastOBDUpdateTime = millis();
     Serial.println("From is equal to OBD");
-    isConnectedOBD = doc["connected"]
-    obd_speed = doc["speed"];
-    obd_throttle = doc["throttle"];
-    updateLcd = true;
+    isConnectedOBD = doc["connected"];
+    current_speed = doc["speed"];
+    current_throttle = doc["throttle"];
   }
 }
 
@@ -119,7 +126,7 @@ void Task2code( void * pvParameters ){
   Serial.print("Task2 running on core ");
   Serial.println(xPortGetCoreID());
   for(;;){
-       if(isEnabledCC() && isConnectedOBD){
+       if(isEnabledCC() && isEnabledOBD()){
          if(target_speed == INVALID){
              target_speed = current_speed;
              speedUpCC(20);
