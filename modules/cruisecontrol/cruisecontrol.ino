@@ -1,3 +1,16 @@
+#include "TimedAction.h"
+#include "MyHelpers.h"
+
+const int INVALID = -1;
+float current_throttle = INVALID;
+int32_t current_speed = INVALID;
+
+void logCurrentStatus(){
+    Serial.println("[LOG] Speed: " + String(current_speed) + " Throttle: " + String(current_throttle) + " Target speed: " + String(target_speed));
+    Serial.println("[LOG] isEnabledCC() " + String(isEnabledCC()) + " isEnabledOBD(): " + String(isEnabledOBD()));
+}
+
+TimedAction logAction = TimedAction(1000, logCurrentStatus);
 const int CYTRON_V5 = 16;
 const int CYTRON_M2A_CLUTCH_ON = 17;
 const int CYTRON_M1A_SPEED_UP = 18;
@@ -59,7 +72,7 @@ TimedAction cruisingAction = TimedAction(500, handleCruising);
 
 void emergencyStopCC(){
     if(target_speed != INVALID || digitalRead(CYTRON_M2A_CLUTCH_ON)){
-      Serial.println("[CC] EMERGENCY STOP!");  
+      Serial.println("[CC] EMERGENCY STOP!");
     }
     digitalWrite(CYTRON_M2A_CLUTCH_ON, LOW);
     digitalWrite(CYTRON_M1A_SPEED_UP, LOW);
@@ -67,7 +80,6 @@ void emergencyStopCC(){
     target_speed = INVALID;
     if(digitalRead(CYTRON_V5)){
         Serial.println("[CC] EMERGENCY STOP! - Waiting for button depress");
-        delay(500);
     }
 }
 
@@ -95,4 +107,21 @@ void loopCC(bool isEnabledNow) {
 
 bool isEnabledCC(){
     return digitalRead(CYTRON_V5);
+}
+
+void setup(){
+    Serial.begin(115200);
+    delay(1000);
+    Serial.println("");
+    Serial.println("[MAIN] Initializing Arduino OBD Cruise Control V0.6");
+    setupCC();
+    setupOBD();
+    Serial.println("[MAIN] End of main setup");
+}
+
+void loop(){
+    bool isEnabledNow = isEnabledCC() && isEnabledOBD();
+    loopOBD(isEnabledNow);
+    loopCC(isEnabledNow);
+    logAction.check();
 }
