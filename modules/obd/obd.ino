@@ -1,5 +1,8 @@
 #include "ELMduino.h"
 #include "TimedAction.h"
+#include "painlessMesh.h"
+#include "meshsecrets.h"
+#include "ArduinoJSON.h"
 
 // BT HC-05
 // pin 1 = TX
@@ -9,15 +12,34 @@
 // pin 16 = uart2 RX
 
 
+painlessMesh  mesh;
 ELM327 myELM327;
-bool debug = false;
-
 int obd_errors_count = 0;
-
-
 const int INVALID = -1;
 float current_throttle = INVALID;
 int32_t current_speed = INVALID;
+TaskHandle_t Task1;
+TaskHandle_t Task2;
+
+
+String preprareJsonMessage () {
+  DynamicJsonDocument json(1024);
+  json["from"] = "OBD";
+  json["connected"] = obdIsConnected();
+  json["speed"] = current_speed;
+  json["throttle"] = current_throttle;
+  String output;
+  serializeJson(json, output);
+  return output;
+}
+
+void broadcastMessage(){
+  Serial.println("Broadcasting...");
+  String msg = preprareJsonMessage();
+  Serial.println(msg);
+  mesh.sendBroadcast(msg);
+}
+
 
 void checkObdThrottle(){
   Serial.println("Query: throttle");
@@ -50,46 +72,56 @@ void checkObdSpeed(){
   }
 }
 
-TimedAction fastObdSpeedAction = TimedAction(503, checkObdSpeed);
-TimedAction fastObdThrottleAction = TimedAction(251, checkObdThrottle);
-
-TimedAction slowObdSpeedAction = TimedAction(2000, checkObdSpeed);
-TimedAction slowObdThrottleAction = TimedAction(1000, checkObdThrottle);
-
-void setupOBD(){
-  Serial.println("[OBD] Start setupOBD");
-  while (!myELM327.begin(Serial2, debug, 10000)){
-    Serial.println("[OBD] Couldn't connect to OBD scanner - Phase 2");
-  }
-  Serial.println("[OBD] End setupOBD - Connected to ELM327 command line");
-}
-
 bool obdIsConnected(){
   return obd_errors_count < 10 && myELM327.connected;
 }
 
-void loopOBD(bool isEnabledNow){
+void loopOBD(){
   if(obdIsConnected()){
-    if(isEnabledNow){
-      fastObdSpeedAction.check();
-      fastObdThrottleAction.check();
-    }else{
-      slowObdSpeedAction.check();
-      slowObdThrottleAction.check();
-    }
+    checkObdSpeed();
+    checkObdThrottle();
+    broadcastMessage();
   }else{
     obd_errors_count = 0;
-    myELM327.begin(Serial2, debug, 10000);
+    current_throttle = INVALID;
+    current_speed = INVALID;
+    myELM327.begin(Serial2, false, 10000);
+  }
+}
+
+TimedAction timedLoopOBD = TimedAction(503, loopOBD);
+
+void Task1code( void * pvParameters ){
+  Serial.print("Task1 running on core ");
+  Serial.println(xPortGetCoreID());
+  for(;;){
+     mesh.update();
+  }
+}
+
+//Task2code: blinks an LED every 700 ms
+void Task2code( void * pvParameters ){
+  Serial.print("Task2 running on core ");
+  Serial.println(xPortGetCoreID());
+  for(;;){
+     timedLoopOBD.check();
   }
 }
 
 void setup() {
-  Serial.begin(38400);
+  Serial.begin(115200);
   Serial2.begin(38400);
-  setupOBD();
+  Serial.println("[OBD] Start setupOBD");
+  mesh.init(MESH_PREFIX, MESH_PASSWORD);
+  while (!myELM327.begin(Serial2, false, 10000)){
+      Serial.println("[OBD] Couldn't connect to OBD scanner - Phase 2");
+  }
+  //create a task that will be executed in the Task1code() function, with priority 1 and executed on core 0
+  xTaskCreatePinnedToCore(Task1code, "Task1", 10000, NULL, 1, &Task1, 0);
+  xTaskCreatePinnedToCore(Task2code, "Task2", 10000, NULL, 1, &Task2, 1);
+
+  Serial.println("[OBD] End setupOBD - Connected to ELM327 command line");
 }
 
 void loop() {
-    loopOBD(true);
-  
 }
