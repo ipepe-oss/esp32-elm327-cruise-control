@@ -75,7 +75,10 @@ bool obdIsConnected(){
 
 void loopOBD(){
   if(obdIsConnected()){
+    checkObdThrottle();
+    broadcastMessage();
     checkObdSpeed();
+    broadcastMessage();
     checkObdThrottle();
     broadcastMessage();
   }else{
@@ -87,7 +90,7 @@ void loopOBD(){
   }
 }
 
-TimedAction timedLoopOBD = TimedAction(503, loopOBD);
+TimedAction timedLoopOBD = TimedAction(700, loopOBD);
 
 void Task1code( void * pvParameters ){
   Serial.print("Task1 running on core ");
@@ -103,6 +106,7 @@ void Task2code( void * pvParameters ){
   Serial.println(xPortGetCoreID());
   for(;;){
      timedLoopOBD.check();
+     delay(1);
   }
 }
 

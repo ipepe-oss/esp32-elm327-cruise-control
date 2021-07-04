@@ -20,9 +20,9 @@ TaskHandle_t Task1;
 TaskHandle_t Task2;
 painlessMesh  mesh;
 
-float Kp=1, Ki=0.1, Kd=0.1;
+float Kp=1, Ki=0.2, Kd=0.2;
 float Pout, Iout, Dout;
-float actPWM, error, lastError, errorSum, Derror;
+float actPWM, error = 0, lastError = 0, errorSum = 0, Derror = 0;
 
 
 bool isEnabledOBD(){
@@ -51,6 +51,11 @@ float speedChangeMultiplier(float target_throttle){
 }
 
 float pidCalcThrottle(){
+    if (target_speed > current_speed){
+      error = target_speed - current_speed;
+    }else{
+      error = (target_speed - current_speed) * 2;
+    }
     error = target_speed - current_speed;
     errorSum = errorSum + ((error+lastError)*0.5);
     Derror = (error - lastError);
@@ -150,6 +155,10 @@ void Task2code( void * pvParameters ){
        if(isEnabledCC() && isEnabledOBD() && current_speed > 30){
          if(target_speed == INVALID){
              target_speed = current_speed;
+             error = 0;
+             lastError = 0;
+             errorSum = 0;
+             Derror = 0;
              speedUpCC(20);
          }
          cruisingAction.check();
