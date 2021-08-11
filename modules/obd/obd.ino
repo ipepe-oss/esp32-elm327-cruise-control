@@ -16,6 +16,7 @@ int obd_errors_count = 0;
 const int INVALID = -1;
 float current_throttle = INVALID;
 int32_t current_speed = INVALID;
+float current_rpm = INVALID;
 TaskHandle_t Task1;
 TaskHandle_t Task2;
 painlessMesh  mesh;
@@ -26,6 +27,7 @@ String preprareJsonMessage () {
   json["connected"] = obdIsConnected();
   json["speed"] = current_speed;
   json["throttle"] = current_throttle;
+  json["rpm"] = current_rpm;
   String output;
   serializeJson(json, output);
   return output;
@@ -50,6 +52,7 @@ void checkObdThrottle(){
     obd_errors_count++;
     current_throttle = INVALID;
     current_speed = INVALID;
+    current_rpm = INVALID;
     myELM327.printError();
   }
 }
@@ -64,7 +67,24 @@ void checkObdSpeed(){
   }else{
     obd_errors_count++;
     current_speed = INVALID;
+    current_rpm = INVALID;
     current_throttle = INVALID;
+    myELM327.printError();
+  }
+}
+
+void checkObdRPM(){
+  Serial.println("Query: rpm");
+  float temp = myELM327.rpm();
+  if (myELM327.status == ELM_SUCCESS){
+    current_rpm = (float)temp;
+    obd_errors_count = 0;
+    Serial.println("RPM: " + String(current_rpm));
+  }else{
+    obd_errors_count++;
+    current_speed = INVALID;
+    current_throttle = INVALID;
+    current_rpm = INVALID;
     myELM327.printError();
   }
 }
@@ -80,6 +100,8 @@ void loopOBD(){
     checkObdSpeed();
     broadcastMessage();
     checkObdThrottle();
+    broadcastMessage();
+    checkObdRPM();
     broadcastMessage();
   }else{
     obd_errors_count = 0;
