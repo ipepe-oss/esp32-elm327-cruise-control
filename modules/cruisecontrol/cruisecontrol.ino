@@ -1,4 +1,3 @@
-#include "TimedAction.h"
 #include "MyHelpers.h"
 #include "painlessMesh.h"
 #include "meshsecrets.h"
@@ -7,7 +6,9 @@
 const int INVALID = -1;
 unsigned long lastOBDUpdateTime;
 bool isConnectedOBD = false;
+bool afterOBDUpdateCallback = false;
 float current_throttle = INVALID;
+float current_rpm = INVALID;
 int32_t current_speed = INVALID;
 const int CYTRON_V5 = 16;
 const int CYTRON_M2A_CLUTCH_ON = 17;
@@ -29,24 +30,16 @@ bool isEnabledOBD(){
   return isConnectedOBD && ((millis() - lastOBDUpdateTime) < 5000);
 }
 
-void logCurrentStatus(){
-    Serial.println("[LOG] Speed: " + String(current_speed) + " Throttle: " + String(current_throttle) + " Target speed: " + String(target_speed));
-    Serial.println("[LOG] isEnabledCC() " + String(isEnabledCC()) + " isEnabledOBD(): " + String(isEnabledOBD()));
-}
-
-TimedAction logAction = TimedAction(1000, logCurrentStatus);
-
 float throttleCompensation(){
     return 0.0;
     return (target_speed - current_speed)*0.15;
 }
 
 float speedChangeMultiplier(float target_throttle){
-  return 1;
-  if(absDiff(current_speed, target_speed) < 10){
+  if(absDiff(current_throttle, target_throttle) < 4){
     return 1;
   }else{
-    return 5;
+    return 3;
   }
 }
 
@@ -100,11 +93,12 @@ void setThrottleTo(float target_throttle, float throttle_compensation){
 }
 
 void handleCruising(){
-  digitalWrite(CYTRON_M2A_CLUTCH_ON, HIGH);
-  setThrottleTo(pidCalcThrottle(), throttleCompensation());
+  if(afterOBDUpdateCallback){
+    afterOBDUpdateCallback = false;
+    digitalWrite(CYTRON_M2A_CLUTCH_ON, HIGH);
+    setThrottleTo(pidCalcThrottle(), throttleCompensation());
+  }
 }
-
-TimedAction cruisingAction = TimedAction(400, handleCruising);
 
 void emergencyStopCC(){
     if(target_speed != INVALID || digitalRead(CYTRON_M2A_CLUTCH_ON)){
@@ -140,19 +134,23 @@ void receivedCallback(uint32_t from, String &msg) {
   //Serial.println("[MESH] msg_from: " + msg_from);
   if(msg_from == String("OBD")){
     lastOBDUpdateTime = millis();
-    //Serial.println("[MESH] From is equal to OBD");
+    afterOBDUpdateCallback = true;
     isConnectedOBD = doc["connected"];
     current_speed = doc["speed"];
+    current_rpm = doc["rpm"];
     current_throttle = doc["throttle"];
   }
 }
 
+bool cruiseSanityCheck(){
+  return current_speed > 30 && current_rpm > 1500 && current_rpm < 5000;
+}
 
 void Task2code( void * pvParameters ){
   Serial.print("Task2 running on core ");
   Serial.println(xPortGetCoreID());
   for(;;){
-       if(isEnabledCC() && isEnabledOBD() && current_speed > 30){
+       if(isEnabledCC() && isEnabledOBD() && cruiseSanityCheck()){
          if(target_speed == INVALID){
              target_speed = current_speed;
              error = 0;
@@ -161,7 +159,7 @@ void Task2code( void * pvParameters ){
              Derror = 0;
              speedUpCC(20);
          }
-         cruisingAction.check();
+         handleCruising();
        }else{
          emergencyStopCC();
        }
@@ -190,6 +188,5 @@ void setup(){
 }
 
 void loop(){
-    logAction.check();
     delay(10);
 }
