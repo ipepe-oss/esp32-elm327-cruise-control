@@ -1,5 +1,4 @@
 #include "ELMduino.h"
-#include "TimedAction.h"
 #include "painlessMesh.h"
 #include "meshsecrets.h"
 #include "ArduinoJSON.h"
@@ -98,11 +97,9 @@ void loopOBD(){
     checkObdThrottle();
     broadcastMessage();
     checkObdSpeed();
-    broadcastMessage();
     checkObdThrottle();
     broadcastMessage();
     checkObdRPM();
-    broadcastMessage();
   }else{
     obd_errors_count = 0;
     current_throttle = INVALID;
@@ -111,8 +108,6 @@ void loopOBD(){
     myELM327.begin(Serial2, false, 10000);
   }
 }
-
-TimedAction timedLoopOBD = TimedAction(700, loopOBD);
 
 void Task1code( void * pvParameters ){
   Serial.print("Task1 running on core ");
@@ -127,8 +122,8 @@ void Task2code( void * pvParameters ){
   Serial.print("Task2 running on core ");
   Serial.println(xPortGetCoreID());
   for(;;){
-     timedLoopOBD.check();
-     delay(1);
+     loopOBD();
+     delay(10);
   }
 }
 
