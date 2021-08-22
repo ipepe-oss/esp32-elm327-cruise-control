@@ -15,16 +15,22 @@ const int CYTRON_M2A_CLUTCH_ON = 17;
 const int CYTRON_M1A_SPEED_UP = 18;
 const int CYTRON_M1B_SPEED_DOWN = 19;
 const int CYTRON_STEP_MILIS = 25;
+
+// change parameters here
+
 const float THROTTLE_BACKLASH_PERCENT = 0.15;
+const float THROTTLE_COMPENSATION_BOOSTER = 3;
+const float THROTTLE_COMPENSATION_DIFFERENCE = 6;
+float Kp=15, Ki=0.1, Kd=0.1;
+
+// change parameters not here
+
+float Pout, Iout, Dout;
+float actPWM, error = 0, lastError = 0, errorSum = 0, Derror = 0;
 int target_speed = INVALID;
 TaskHandle_t Task1;
 TaskHandle_t Task2;
 painlessMesh  mesh;
-
-float Kp=1, Ki=0.2, Kd=0.2;
-float Pout, Iout, Dout;
-float actPWM, error = 0, lastError = 0, errorSum = 0, Derror = 0;
-
 
 bool isEnabledOBD(){
   return isConnectedOBD && ((millis() - lastOBDUpdateTime) < 5000);
@@ -36,10 +42,10 @@ float throttleCompensation(){
 }
 
 float speedChangeMultiplier(float target_throttle){
-  if(absDiff(current_throttle, target_throttle) < 4){
+  if(absDiff(current_throttle, target_throttle) < THROTTLE_COMPENSATION_DIFFERENCE){
     return 1;
   }else{
-    return 3;
+    return THROTTLE_COMPENSATION_BOOSTER;
   }
 }
 
@@ -47,7 +53,7 @@ float pidCalcThrottle(){
     if (target_speed > current_speed){
       error = target_speed - current_speed;
     }else{
-      error = (target_speed - current_speed) * 2;
+      error = (target_speed - current_speed) * 3;
     }
     error = target_speed - current_speed;
     errorSum = errorSum + ((error+lastError)*0.5);
